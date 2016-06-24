@@ -45,8 +45,11 @@ struct Flags : public virtual mesos::internal::logging::Flags
 
     add(&Flags::docker_socket,
         "docker_socket",
-        "The UNIX socket path to be used by docker CLI for accessing docker\n"
-        "daemon.");
+        "Resource used by the agent and the executor to provice CLI access\n"
+        "to the Docker daemon. On Unix, this is typically a path to a\n"
+        "socket, such as '/var/run/docker.sock'. On Windows this must be a\n"
+        "named pipe, such as '//./pipe/docker_engine'. NOTE: This must be\n"
+        "the path used by the Docker image used to run the agent.\n");
 
     add(&Flags::sandbox_directory,
         "sandbox_directory",
