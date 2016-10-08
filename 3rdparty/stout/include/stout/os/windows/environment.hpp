@@ -25,7 +25,7 @@ inline std::map<std::string, std::string> environment()
   std::map<std::string, std::string> result;
 
   int prev = 0;
-  for(int i = 0; env[i] != '\0' && env[i+1] != '\0';) {
+  for(size_t i = 0; env[i] != '\0' && env[i+1] != '\0';) {
     std::string entry(env + i);
     i = i + entry.size() + 1;
     size_t position = entry.find_first_of('=');
