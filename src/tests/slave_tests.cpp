@@ -191,14 +191,17 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, DuplicateTerminalUpdateBeforeAck)
 {
   Clock::pause();
 
-  Try<Owned<cluster::Master>> master = StartMaster();
+  master::Flags masterFlags = CreateMasterFlags();
+  Try<Owned<cluster::Master>> master = StartMaster(masterFlags);
   ASSERT_SOME(master);
 
   MockExecutor exec(DEFAULT_EXECUTOR_ID);
   TestContainerizer containerizer(&exec);
 
+  slave::Flags agentFlags = CreateSlaveFlags();
   Owned<MasterDetector> detector = master.get()->createDetector();
-  Try<Owned<cluster::Slave>> slave = StartSlave(detector.get(), &containerizer);
+  Try<Owned<cluster::Slave>> slave = StartSlave(detector.get(), &containerizer,
+                                                agentFlags);
   ASSERT_SOME(slave);
 
   FrameworkInfo frameworkInfo = DEFAULT_FRAMEWORK_INFO;
@@ -218,6 +221,11 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, DuplicateTerminalUpdateBeforeAck)
     .WillRepeatedly(Return()); // Ignore subsequent offers.
 
   driver.start();
+
+  // Advance the clock to trigger both agent registration and a batch
+  // allocation.
+  Clock::advance(agentFlags.registration_backoff_factor);
+  Clock::advance(masterFlags.allocation_interval);
 
   AWAIT_READY(offers);
   EXPECT_NE(0u, offers->size());
@@ -1426,14 +1434,15 @@ TEST_F(SlaveTest, MetricsSlaveLaunchErrors)
 
 TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, StateEndpoint)
 {
-  Try<Owned<cluster::Master>> master = StartMaster();
+  master::Flags masterFlags = this->CreateMasterFlags();
+  Try<Owned<cluster::Master>> master = StartMaster(masterFlags);
   ASSERT_SOME(master);
 
-  slave::Flags flags = this->CreateSlaveFlags();
+  slave::Flags agentFlags = this->CreateSlaveFlags();
 
-  flags.hostname = "localhost";
-  flags.resources = "cpus:4;gpus:0;mem:2048;disk:512;ports:[33000-34000]";
-  flags.attributes = "rack:abc;host:myhost";
+  agentFlags.hostname = "localhost";
+  agentFlags.resources = "cpus:4;gpus:0;mem:2048;disk:512;ports:[33000-34000]";
+  agentFlags.attributes = "rack:abc;host:myhost";
 
   MockExecutor exec(DEFAULT_EXECUTOR_ID);
   TestContainerizer containerizer(&exec);
@@ -1446,7 +1455,7 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, StateEndpoint)
   Owned<MasterDetector> detector = master.get()->createDetector();
 
   Try<Owned<cluster::Slave>> slave =
-    StartSlave(detector.get(), &containerizer, flags);
+    StartSlave(detector.get(), &containerizer, agentFlags);
   ASSERT_SOME(slave);
 
   // Ensure slave has finished recovery.
@@ -1506,16 +1515,16 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, StateEndpoint)
   ASSERT_TRUE(state.values["id"].is<JSON::String>());
 
   EXPECT_EQ(stringify(slave.get()->pid), state.values["pid"]);
-  EXPECT_EQ(flags.hostname.get(), state.values["hostname"]);
+  EXPECT_EQ(agentFlags.hostname.get(), state.values["hostname"]);
 
   Try<Resources> resources = Resources::parse(
-      flags.resources.get(), flags.default_role);
+      agentFlags.resources.get(), agentFlags.default_role);
 
   ASSERT_SOME(resources);
 
   EXPECT_EQ(model(resources.get()), state.values["resources"]);
 
-  Attributes attributes = Attributes::parse(flags.attributes.get());
+  Attributes attributes = Attributes::parse(agentFlags.attributes.get());
 
   EXPECT_EQ(model(attributes), state.values["attributes"]);
 
@@ -1530,7 +1539,7 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, StateEndpoint)
   EXPECT_TRUE(
       state.values["completed_frameworks"].as<JSON::Array>().values.empty());
 
-  // TODO(bmahler): Ensure this contains all the flags.
+  // TODO(bmahler): Ensure this contains all the agentFlags.
   ASSERT_TRUE(state.values["flags"].is<JSON::Object>());
   EXPECT_FALSE(state.values["flags"].as<JSON::Object>().values.empty());
 
@@ -1546,6 +1555,11 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, StateEndpoint)
     .WillRepeatedly(Return()); // Ignore subsequent offers.
 
   driver.start();
+
+  // Advance the clock to trigger both agent registration and a batch
+  // allocation.
+  Clock::advance(agentFlags.registration_backoff_factor);
+  Clock::advance(masterFlags.allocation_interval);
 
   AWAIT_READY(offers);
   EXPECT_NE(0u, offers.get().size());
@@ -2716,7 +2730,10 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, PingTimeoutNoPings)
   Future<SlaveReregisteredMessage> slaveReregisteredMessage =
     FUTURE_PROTOBUF(SlaveReregisteredMessage(), _, _);
 
+  // Skip clock ahead to avoid waiting, then `resume` clock so that
+  // agent can register with the master.
   Clock::advance(totalTimeout);
+  Clock::resume();
 
   AWAIT_READY(detected);
   AWAIT_READY(slaveReregisteredMessage);
@@ -2763,7 +2780,11 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, PingTimeoutSomePings)
   Future<SlaveReregisteredMessage> slaveReregisteredMessage =
     FUTURE_PROTOBUF(SlaveReregisteredMessage(), _, _);
 
+  // Skip clock ahead to avoid waiting, then `resume` clock so that
+  // agent can register with the master after a random `delay` (which
+  // requires  an unpaused clock.)
   Clock::advance(slave::DEFAULT_MASTER_PING_TIMEOUT());
+  Clock::resume();
 
   AWAIT_READY(detected);
   AWAIT_READY(slaveReregisteredMessage);
@@ -3663,12 +3684,15 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, ReregisterWithStatusUpdateTaskState)
   Future<StatusUpdateMessage> statusUpdateMessage =
     DROP_PROTOBUF(StatusUpdateMessage(), _, master.get()->pid);
 
-  Future<Nothing> ___statusUpdate = FUTURE_DISPATCH(_, &Slave::___statusUpdate);
+  // Pause the clock immediately after status update to avoid status
+  // update retries. This pause must happen after the agent
+  // registers, since agent is allowed to `delay` initial
+  // registration by some random amount of time in the future, which
+  // requires an unpaused clock.
+  Future<Nothing> ___statusUpdate = FUTURE_DISPATCH(_, &Slave::___statusUpdate)
+    .onAny(&Clock::pause);
 
   driver.start();
-
-  // Pause the clock to avoid status update retries.
-  Clock::pause();
 
   // Wait until TASK_RUNNING is sent to the master.
   AWAIT_READY(statusUpdateMessage);
@@ -3697,6 +3721,9 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(SlaveTest, ReregisterWithStatusUpdateTaskState)
   // Simulate a new master detected event on the slave,
   // so that the slave will do a re-registration.
   detector.appoint(master.get()->pid);
+
+  // `resume` clock so agent can re-register with the master.
+  Clock::resume();
 
   // Capture and inspect the slave reregistration message.
   AWAIT_READY(reregisterSlaveMessage);
@@ -5598,6 +5625,11 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(
     AWAIT_READY(schedRegistered);
 
     for (size_t i = 0; i < totalExecutorsPerFramework; i++) {
+      // Advance the clock to trigger both agent registration and a
+      // batchallocation.
+      Clock::advance(agentFlags.registration_backoff_factor);
+      Clock::advance(masterFlags.allocation_interval);
+
       Future<Offer> offer = offers.get();
       AWAIT_READY(offer);
 
@@ -5628,9 +5660,6 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(
 
       EXPECT_CALL(*executors[i], shutdown(_))
         .Times(AtMost(1));
-
-      // Advance the clock to trigger a batch allocation.
-      Clock::advance(masterFlags.allocation_interval);
     }
 
     // Destroy all of the containers to complete the executors.
