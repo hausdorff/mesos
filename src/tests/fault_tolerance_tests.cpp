@@ -811,11 +811,12 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(FaultToleranceTest, FrameworkReregister)
   EXPECT_CALL(sched, resourceOffers(&driver, _))
     .WillOnce(FutureSatisfy(&resourceOffers));
 
-  // Pause the clock so that we know the time at which framework
-  // (re-)registration should occur.
-  Clock::pause();
-
-  process::Time registerTime = Clock::now();
+  process::Time registerTime;
+  resourceOffers
+    .onAny([&registerTime]() mutable {
+      Clock::pause();
+      registerTime = Clock::now();
+    });
 
   driver.start();
 
