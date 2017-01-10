@@ -31,6 +31,8 @@
 #include <stout/path.hpp>
 #include <stout/unreachable.hpp>
 
+#include "process/subprocess.hpp"
+
 #include <mesos/mesos.hpp>
 #include <mesos/type_utils.hpp>
 
@@ -51,6 +53,7 @@
 
 #include "slave/containerizer/mesos/launch.hpp"
 #include "slave/containerizer/mesos/paths.hpp"
+
 
 using std::cerr;
 using std::cout;
@@ -96,11 +99,9 @@ MesosContainerizerLaunch::Flags::Flags()
       "properly in the subprocess. It's used to synchronize with the \n"
       "parent process. If not specified, no synchronization will happen.");
 
-#ifndef __WINDOWS__
   add(&Flags::runtime_directory,
       "runtime_directory",
       "The runtime directory for the container (used for checkpointing)");
-#endif // __WINDOWS__
 
 #ifdef __linux__
   add(&Flags::namespace_mnt_target,
@@ -667,9 +668,22 @@ int MesosContainerizerLaunch::execute()
       environment[name] = value;
     }
 
+#ifndef __WINDOWS__
     if (!environment.contains("PATH")) {
       environment["PATH"] = os::host_default_path();
     }
+#else
+    // TODO(dpravat): (MESOS-6816) We should allow system environment variables
+    // to be overwritten if they are specified by the framework.  This might
+    // cause applications to not work, but upon overriding system defaults, it
+    // becomes the overidder's problem.
+    Option<std::map<string, string>> systemEnvironment =
+      process::internal::getSystemEnvironment();
+    foreachpair (
+        const string& key, const string& value, systemEnvironment.get()) {
+      environment[key] = value;
+    }
+#endif // __WINDOWS__
 
     envp = os::raw::Envp(environment);
   }
@@ -759,7 +773,6 @@ int MesosContainerizerLaunch::execute()
   exitWithStatus(EXIT_FAILURE);
   UNREACHABLE();
 }
-
 } // namespace slave {
 } // namespace internal {
 } // namespace mesos {
