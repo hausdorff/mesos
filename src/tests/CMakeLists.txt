@@ -236,7 +236,7 @@ link_directories(${MESOS_TESTS_LIB_DIRS})
 
 # THE TEST AND HELPER EXECUTABLEs (generates, e.g., stout-tests, etc., on Linux).
 #################################$###############################################
-add_executable(${MESOS_TESTS_TARGET} ${MESOS_TESTS_SRC})
+add_executable(${MESOS_TESTS_TARGET} ${MESOS_TESTS_SRC} containerizer/docker_containerizer_tests.cpp)
 add_executable(${TEST_HELPER_TARGET} ${TEST_HELPER_SRC})
 
 # ADD LINKER FLAGS (generates, e.g., -lglog on Linux).
