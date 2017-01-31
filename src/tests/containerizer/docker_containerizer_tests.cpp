@@ -419,13 +419,13 @@ TEST_F(DockerContainerizerTest, DISABLED_ROOT_DOCKER_Launch_Executor_Bridged)
 #endif // __linux__
 
 
-TEST_F(DockerContainerizerTest, ROOT_DOCKER_Launch)
+TEST_F(DockerContainerizerTest, Launch)
 {
   Try<Owned<cluster::Master>> master = StartMaster();
   ASSERT_SOME(master);
 
-  MockDocker* mockDocker =
-    new MockDocker(tests::flags.docker, tests::flags.docker_socket);
+  MockDocker* mockDocker = new MockDocker(
+      tests::flags.docker, tests::flags.docker_socket);
 
   Shared<Docker> docker(mockDocker);
 
@@ -481,15 +481,17 @@ TEST_F(DockerContainerizerTest, ROOT_DOCKER_Launch)
   task.mutable_resources()->CopyFrom(offer.resources());
 
   CommandInfo command;
-  command.set_value("sleep 1000");
+  command.set_value(SLEEP_COMMAND(1000));
 
   ContainerInfo containerInfo;
   containerInfo.set_type(ContainerInfo::DOCKER);
 
   // TODO(tnachen): Use local image to test if possible.
   ContainerInfo::DockerInfo dockerInfo;
-  dockerInfo.set_image("alpine");
+  dockerInfo.set_image("microsoft/windowsservercore");
   containerInfo.mutable_docker()->CopyFrom(dockerInfo);
+  containerInfo.mutable_docker()->set_network(
+      ContainerInfo::DockerInfo::BRIDGE);
 
   task.mutable_command()->CopyFrom(command);
   task.mutable_container()->CopyFrom(containerInfo);
@@ -507,8 +509,8 @@ TEST_F(DockerContainerizerTest, ROOT_DOCKER_Launch)
 
   driver.launchTasks(offers.get()[0].id(), {task});
 
-  AWAIT_READY_FOR(containerId, Seconds(60));
-  AWAIT_READY_FOR(statusRunning, Seconds(60));
+  AWAIT_READY_FOR(containerId, Seconds(600));
+  AWAIT_READY_FOR(statusRunning, Seconds(600));
   EXPECT_EQ(TASK_RUNNING, statusRunning.get().state());
   ASSERT_TRUE(statusRunning.get().has_data());
 

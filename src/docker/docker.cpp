@@ -690,8 +690,8 @@ Future<Option<int>> Docker::run(
   argv.push_back("--net");
   string network;
   switch (dockerInfo.network()) {
-    case ContainerInfo::DockerInfo::HOST: network = "host"; break;
-    case ContainerInfo::DockerInfo::BRIDGE: network = "bridge"; break;
+    case ContainerInfo::DockerInfo::HOST: network = "none"; break;
+    case ContainerInfo::DockerInfo::BRIDGE: network = "none"; break;
     case ContainerInfo::DockerInfo::NONE: network = "none"; break;
     case ContainerInfo::DockerInfo::USER: {
       // User defined networks require docker version >= 1.9.0.

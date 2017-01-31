@@ -147,7 +147,7 @@ public:
       killPolicy = task.kill_policy();
     }
 
-    cout << "Starting task " << taskId.get() << endl;
+    // cout << "Starting task " << taskId.get() << endl;
 
     CHECK(task.has_container());
     CHECK(task.has_command());
@@ -231,7 +231,7 @@ public:
 
   void killTask(ExecutorDriver* driver, const TaskID& taskId)
   {
-    cout << "Received killTask for task " << taskId.value() << endl;
+    // cout << "Received killTask for task " << taskId.value() << endl;
 
     // Using shutdown grace period as a default is backwards compatible
     // with the `stop_timeout` flag, deprecated in 1.0.
@@ -248,7 +248,7 @@ public:
 
   void shutdown(ExecutorDriver* driver)
   {
-    cout << "Shutting down" << endl;
+    // cout << "Shutting down" << endl;
 
     // Currently, 'docker->run' uses the reaper internally, hence we need
     // to account for the reap interval. We also leave a small buffer of
@@ -290,8 +290,8 @@ protected:
       return;
     }
 
-    cout << "Received task health update, healthy: "
-         << stringify(healthStatus.healthy()) << endl;
+    // cout << "Received task health update, healthy: "
+    //      << stringify(healthStatus.healthy()) << endl;
 
     TaskStatus status;
     status.mutable_task_id()->CopyFrom(healthStatus.task_id());
@@ -684,7 +684,7 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  std::cout << stringify(flags) << std::endl;
+  // std::cout << stringify(flags) << std::endl;
 
   mesos::internal::logging::initialize(argv[0], flags, true); // Catch signals.
 
@@ -698,7 +698,7 @@ int main(int argc, char** argv)
     return EXIT_SUCCESS;
   }
 
-  std::cout << stringify(flags) << std::endl;
+  // std::cout << stringify(flags) << std::endl;
 
   if (flags.docker.isNone()) {
     cerr << flags.usage("Missing required option --docker") << endl;
@@ -788,7 +788,8 @@ int main(int argc, char** argv)
   // should have already validated docker.
   Try<Owned<Docker>> docker = Docker::create(
       flags.docker.get(),
-      flags.docker_socket.get(),
+      // flags.docker_socket.get(),
+      "npipe://",
       false);
 
   if (docker.isError()) {

@@ -62,8 +62,11 @@ public:
   {
     ContainerLogger::SubprocessInfo info;
 
-    info.out = SubprocessInfo::IO::PATH(path::join(sandboxDirectory, "stdout"));
-    info.err = SubprocessInfo::IO::PATH(path::join(sandboxDirectory, "stderr"));
+    info.out =
+      SubprocessInfo::IO::PATH(path::join(sandboxDirectory, "stdout1"));
+
+    info.err =
+      SubprocessInfo::IO::PATH(path::join(sandboxDirectory, "stderr1"));
 
     return info;
   }
