@@ -2061,9 +2061,9 @@ quotas for container sandbox directories. Valid project IDs range from
 </table>
 
 
-## Mesos Build Configuration Options
+## Mesos Autotools Build Configuration Options
 
-###The configure script has the following flags for optional features:
+### Autotools `configure` script options
 
 <table class="table table-striped">
   <thead>
@@ -2300,7 +2300,7 @@ quotas for container sandbox directories. Valid project IDs range from
   </tr>
 </table>
 
-### The configure script has the following flags for optional packages:
+### Autotools `configure` script optional package flags
 
 <table class="table table-striped">
   <thead>
@@ -2521,7 +2521,7 @@ quotas for container sandbox directories. Valid project IDs range from
   </tr>
 </table>
 
-### Some influential environment variables for configure script:
+### Environment variables which affect the Autotools `configure` script
 
 Use these variables to override the choices made by `configure` or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2592,6 +2592,63 @@ it to find libraries and programs with nonstandard names/locations.
     <td>
       The installed Python version to use, for example '2.3'. This string will
       be appended to the Python interpreter canonical name.
+    </td>
+  </tr>
+</table>
+
+## Mesos CMake Build Configuration Options
+
+### CMake configuration options
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th width="30%">
+        Flag
+      </th>
+      <th>
+        Explanation
+      </th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+      -D3RDPARTY_DEPENDENCIES[=path_or_url]
+    </td>
+    <td>
+      Location of the dependency mirror. In some cases, the Mesos build system needs to acquire third-party dependencies that aren't rebundled as tarballs in the Mesos repository. For example, on Windows, we must aquire newer versions of some dependencies, and (since it does not have a package manager), we must acquire system dependencies like cURL. This parameter can be either a URL (for example, pointing at the Mesos official [third-party dependency mirror](https://github.com/3rdparty/mesos-3rdparty)), or a local folder (for example, a local clone of the dependency mirror). [default=https://github.com/3rdparty/mesos-3rdparty]
+    </td>
+  </tr>
+  <tr>
+    <td>
+      -DENABLE_LIBEVENT
+    </td>
+    <td>
+      Use libevent instead of libev for the event loop. [default=FALSE]
+    </td>
+  </tr>
+  <tr>
+    <td>
+      -DHAS_AUTHENTICATION
+    </td>
+    <td>
+      Build Mesos with support for authentication. [default=TRUE]
+    </td>
+  </tr>
+  <tr>
+    <td>
+      -DREBUNDLED
+    </td>
+    <td>
+      Attempt to build against the third-party dependencies included as tarballs in the Mesos repository. NOTE: This is not always possible: for example, a dependency might not be included as a tarball in the Mesos repository; additionally, Windows does not have a package manager, so we do not expect system dependencies like APR to exist natively, and we therefore must acquire them. In these cases (or when `REBUNDLED` is set to `FALSE`), we will acquire the dependency from the location specified by the `3RDPARTY_DEPENDENCIES`, which by default points to the official Mesos [third-party dependency mirror]([3rdparty](https://github.com/3rdparty/mesos-3rdparty). [default=TRUE]
+    </td>
+  </tr>
+  <tr>
+    <td>
+      -DVERBOSE
+    </td>
+    <td>
+      Generate a build solution that produces verbose output (for example, verbose Makefiles). [default=TRUE]
     </td>
   </tr>
 </table>
