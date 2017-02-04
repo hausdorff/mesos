@@ -34,8 +34,9 @@
 #include <stout/net.hpp>
 #include <stout/stopwatch.hpp>
 
-#include <stout/os/stat.hpp>
+#include <stout/os/constants.hpp>
 #include <stout/os/exists.hpp>
+#include <stout/os/stat.hpp>
 
 #include "linux/fs.hpp"
 #include "linux/ns.hpp"
@@ -379,7 +380,7 @@ protected:
     Try<Subprocess> s = subprocess(
         path::join(flags.launcher_dir, "mesos-network-helper"),
         argv,
-        Subprocess::PATH("/dev/null"),
+        Subprocess::PATH(os::DEV_NULL),
         Subprocess::PIPE(),
         Subprocess::FD(STDERR_FILENO),
         &statistics.flags);
