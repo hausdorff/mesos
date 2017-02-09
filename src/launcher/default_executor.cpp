@@ -394,7 +394,9 @@ protected:
     CHECK(launched);
     CHECK_EQ(containerIds.size(), (size_t) taskGroup.tasks().size());
 
-    size_t index = 0;
+    // NOTE: Use `int` instead of `size_t` here to avoid compiler warnings in
+    // the call to `Get` below.
+    int index = 0;
     foreach (const ContainerID& containerId, containerIds) {
       const TaskInfo& task = taskGroup.tasks().Get(index++);
       const TaskID& taskId = task.task_id();

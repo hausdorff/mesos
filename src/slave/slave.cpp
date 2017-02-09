@@ -1124,7 +1124,8 @@ void Slave::registered(
   CHECK_SOME(master);
 
   if (connection.has_total_ping_timeout_seconds()) {
-    masterPingTimeout = Seconds(connection.total_ping_timeout_seconds());
+    masterPingTimeout = Seconds(
+        static_cast<int64_t>(connection.total_ping_timeout_seconds()));
   } else {
     masterPingTimeout = DEFAULT_MASTER_PING_TIMEOUT();
   }
@@ -1232,7 +1233,8 @@ void Slave::reregistered(
   }
 
   if (connection.has_total_ping_timeout_seconds()) {
-    masterPingTimeout = Seconds(connection.total_ping_timeout_seconds());
+    masterPingTimeout = Seconds(
+        static_cast<int64_t>(connection.total_ping_timeout_seconds()));
   } else {
     masterPingTimeout = DEFAULT_MASTER_PING_TIMEOUT();
   }
@@ -5994,7 +5996,8 @@ Future<ResourceUsage> Slave::usage()
 
         size_t i = 0;
         foreach (const Future<ResourceStatistics>& future, futures) {
-          ResourceUsage::Executor* executor = usage->mutable_executors(i++);
+          ResourceUsage::Executor* executor = usage->mutable_executors(
+              static_cast<int>(i++));
 
           if (future.isReady()) {
             executor->mutable_statistics()->CopyFrom(future.get());

@@ -429,7 +429,7 @@ bool DRFSorter::contains(const string& name) const
 
 int DRFSorter::count()
 {
-  return allocations.size();
+  return static_cast<int>(allocations.size());
 }
 
 

@@ -2393,8 +2393,8 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(PartitionTest, RegistryGcByCount)
 
   // Test logic assumes that two agents can be marked unreachable in
   // sequence without triggering GC.
-  const Duration health_check_duration =
-    masterFlags.agent_ping_timeout * masterFlags.max_agent_ping_timeouts;
+  const Duration health_check_duration = masterFlags.agent_ping_timeout *
+    static_cast<double>(masterFlags.max_agent_ping_timeouts);
 
   ASSERT_GE(masterFlags.registry_gc_interval, health_check_duration * 2);
 

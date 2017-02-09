@@ -24,8 +24,9 @@ namespace slave {
 
 Duration DEFAULT_MASTER_PING_TIMEOUT()
 {
+  // Explicitly cast from `size_t` to `pid_t` to silence compiler warnings.
   return master::DEFAULT_AGENT_PING_TIMEOUT *
-    master::DEFAULT_MAX_AGENT_PING_TIMEOUTS;
+    static_cast<double>(master::DEFAULT_MAX_AGENT_PING_TIMEOUTS);
 }
 
 } // namespace slave {

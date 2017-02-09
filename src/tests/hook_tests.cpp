@@ -261,8 +261,8 @@ TEST_F_TEMP_DISABLED_ON_WINDOWS(HookTest, MasterSlaveLostHookTest)
   AWAIT_READY(slaveRegisteredMessage);
 
   // Forward clock slave timeout.
-  Duration totalTimeout =
-    masterFlags.agent_ping_timeout * masterFlags.max_agent_ping_timeouts;
+  Duration totalTimeout = masterFlags.agent_ping_timeout *
+    static_cast<double>(masterFlags.max_agent_ping_timeouts);
 
   Clock::pause();
   Clock::advance(totalTimeout);

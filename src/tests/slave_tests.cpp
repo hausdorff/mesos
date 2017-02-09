@@ -2702,8 +2702,8 @@ TEST_F(SlaveTest, PingTimeoutNoPings)
   master::Flags masterFlags = CreateMasterFlags();
   masterFlags.agent_ping_timeout = Seconds(5);
   masterFlags.max_agent_ping_timeouts = 2u;
-  Duration totalTimeout =
-    masterFlags.agent_ping_timeout * masterFlags.max_agent_ping_timeouts;
+  Duration totalTimeout = masterFlags.agent_ping_timeout *
+    static_cast<double>(masterFlags.max_agent_ping_timeouts);
 
   // Start a master.
   Try<Owned<cluster::Master>> master = StartMaster(masterFlags);
@@ -2725,7 +2725,7 @@ TEST_F(SlaveTest, PingTimeoutNoPings)
   AWAIT_READY(slaveRegisteredMessage);
   ASSERT_TRUE(slaveRegisteredMessage.get().has_connection());
   MasterSlaveConnection connection = slaveRegisteredMessage.get().connection();
-  EXPECT_EQ(totalTimeout, Seconds(connection.total_ping_timeout_seconds()));
+  EXPECT_EQ(totalTimeout, Seconds(static_cast<int64_t>(connection.total_ping_timeout_seconds())));
 
   // Ensure the slave processes the registration message and schedules
   // the ping timeout, before we advance the clock.

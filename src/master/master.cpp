@@ -5287,8 +5287,8 @@ void Master::registerSlave(
       LOG(INFO) << "Agent " << *slave << " already registered,"
                 << " resending acknowledgement";
 
-      Duration pingTimeout =
-        flags.agent_ping_timeout * flags.max_agent_ping_timeouts;
+      Duration pingTimeout = flags.agent_ping_timeout *
+        static_cast<double>(flags.max_agent_ping_timeouts);
       MasterSlaveConnection connection;
       connection.set_total_ping_timeout_seconds(pingTimeout.secs());
 
@@ -5378,8 +5378,8 @@ void Master::_registerSlave(
 
   addSlave(slave);
 
-  Duration pingTimeout =
-    flags.agent_ping_timeout * flags.max_agent_ping_timeouts;
+  Duration pingTimeout = flags.agent_ping_timeout *
+    static_cast<double>(flags.max_agent_ping_timeouts);
   MasterSlaveConnection connection;
   connection.set_total_ping_timeout_seconds(pingTimeout.secs());
 
@@ -5766,8 +5766,8 @@ void Master::_reregisterSlave(
 
   addSlave(slave, completedFrameworks);
 
-  Duration pingTimeout =
-    flags.agent_ping_timeout * flags.max_agent_ping_timeouts;
+  Duration pingTimeout = flags.agent_ping_timeout *
+    static_cast<double>(flags.max_agent_ping_timeouts);
   MasterSlaveConnection connection;
   connection.set_total_ping_timeout_seconds(pingTimeout.secs());
 
@@ -7178,8 +7178,8 @@ void Master::reconcileKnownSlave(
   // To resolve both cases correctly, we must reconcile through the
   // slave. For slaves that do not support reconciliation, we keep
   // the old semantics and cover only case (1) via TASK_LOST.
-  Duration pingTimeout =
-    flags.agent_ping_timeout * flags.max_agent_ping_timeouts;
+  Duration pingTimeout = flags.agent_ping_timeout *
+    static_cast<double>(flags.max_agent_ping_timeouts);
   MasterSlaveConnection connection;
   connection.set_total_ping_timeout_seconds(pingTimeout.secs());
 
@@ -8621,7 +8621,7 @@ double Master::_slaves_inactive()
 
 double Master::_slaves_unreachable()
 {
-  return slaves.unreachable.size();
+  return static_cast<double>(slaves.unreachable.size());
 }
 
 

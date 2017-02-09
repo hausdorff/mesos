@@ -73,7 +73,8 @@ ostream& operator<<(ostream& stream, const Value::Scalar& scalar)
 {
   // Output the scalar's full significant digits and save the old
   // precision.
-  long precision = stream.precision(std::numeric_limits<double>::digits10);
+  long precision = static_cast<long>(
+    stream.precision(std::numeric_limits<double>::digits10));
 
   // We discard any additional precision (of the fractional part)
   // from scalar resources before writing them to an ostream. This
@@ -609,7 +610,7 @@ Try<Value> parse(const string& text)
       for (size_t i = 0; i < tokens.size(); i += 2) {
         Value::Range* range = ranges->add_range();
 
-        int j = i;
+        int j = static_cast<int>(i);
         Try<uint64_t> begin = numify<uint64_t>(tokens[j++]);
         Try<uint64_t> end = numify<uint64_t>(tokens[j++]);
         if (begin.isError() || end.isError()) {

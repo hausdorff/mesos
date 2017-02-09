@@ -157,7 +157,9 @@ TEST_F(ProtobufIOTest, RepeatedPtrField)
 
   ASSERT_EQ(expected.size(), actual.size());
   for (size_t i = 0; i < size; i++) {
-    EXPECT_EQ(expected.Get(i), actual.Get(i));
+    EXPECT_EQ(
+        expected.Get(static_cast<int>(i)),
+        actual.Get(static_cast<int>(i)));
   }
 }
 
