@@ -244,7 +244,7 @@ class FileEncoder : public Encoder
 {
 public:
   FileEncoder(int_fd _fd, size_t _size)
-    : fd(_fd), size(_size), index(0) {}
+    : fd(_fd), size(static_cast<off_t>(_size)), index(0) {}
 
   virtual ~FileEncoder()
   {
@@ -268,7 +268,7 @@ public:
   virtual void backup(size_t length)
   {
     if (index >= static_cast<off_t>(length)) {
-      index -= length;
+      index -= static_cast<off_t>(length);
     }
   }
 
