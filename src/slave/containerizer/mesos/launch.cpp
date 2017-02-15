@@ -98,11 +98,9 @@ MesosContainerizerLaunch::Flags::Flags()
       "properly in the subprocess. It's used to synchronize with the \n"
       "parent process. If not specified, no synchronization will happen.");
 
-#ifndef __WINDOWS__
   add(&Flags::runtime_directory,
       "runtime_directory",
       "The runtime directory for the container (used for checkpointing)");
-#endif // __WINDOWS__
 
 #ifdef __linux__
   add(&Flags::namespace_mnt_target,
