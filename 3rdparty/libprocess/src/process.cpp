@@ -3829,61 +3829,66 @@ Future<Response> ProcessBase::_visit(
 
   return authentication
     .then(defer(self(), [this, endpoint, request, name](
-        const Option<AuthenticationResult>& authentication)
-          -> Future<Response> {
-      Option<string> principal = None();
+      const Option<AuthenticationResult>& authentication) -> Future<Response> {
+    Option<string> principal = None();
 
-      // If authentication failed, we do not continue with authorization.
-      if (authentication.isSome()) {
-        if (authentication->unauthorized.isSome()) {
-          // Request was not authenticated, challenged issued.
-          return authentication->unauthorized.get();
-        } else if (authentication->forbidden.isSome()) {
-          // Request was not authenticated, no challenge issued.
-          return authentication->forbidden.get();
-        }
-
-        principal = authentication->principal;
+    // If authentication failed, we do not continue with authorization.
+    if (authentication.isSome()) {
+      if (authentication->unauthorized.isSome()) {
+        // Request was not authenticated, challenged issued.
+        return authentication->unauthorized.get();
+      }
+      else if (authentication->forbidden.isSome()) {
+        // Request was not authenticated, no challenge issued.
+        return authentication->forbidden.get();
       }
 
-      // The result of a call to an authorization callback.
-      Future<bool> authorization;
+      principal = authentication->principal;
+    }
 
-      // Look for an authorization callback installed for this endpoint path.
-      // If none is found, use a trivial one.
-      const string callback_path = path::join("/" + pid.id, name);
-      if (authorization_callbacks != nullptr &&
-          authorization_callbacks->count(callback_path) > 0) {
-        authorization = authorization_callbacks->at(callback_path)(
-            *request, principal);
+    // The result of a call to an authorization callback.
+    Future<bool> authorization;
 
-        // Sequence the authorization future to ensure the handlers
-        // are invoked in the same order that requests arrive.
-          authorization = handlers.httpSequence->add<bool>(
-            [authorization]() { return authorization; });
-      } else {
-        authorization = handlers.httpSequence->add<bool>(
-            []() { return true; });
+    // Look for an authorization callback installed for this endpoint path.
+    // If none is found, use a trivial one.
+    const string callback_path = path::join("/" + pid.id, name);
+    if (authorization_callbacks != nullptr &&
+      authorization_callbacks->count(callback_path) > 0) {
+      authorization = authorization_callbacks->at(callback_path)(
+        *request, principal);
+
+      // Sequence the authorization future to ensure the handlers
+      // are invoked in the same order that requests arrive.
+      authorization = handlers.httpSequence->add<bool>(
+        [authorization]() { return authorization; });
+    }
+    else {
+      authorization = handlers.httpSequence->add<bool>(
+        []() { return true; });
+    }
+
+    // Install a callback on the authorization result.
+    const std::function<Future<Response>(const bool &)> f = [endpoint, request, principal](
+      const bool & authorization) -> Future<Response> {
+      if (authorization) {
+        // Authorization succeeded, so forward request to the handler.
+        if (endpoint.realm.isNone()) {
+          return endpoint.handler.get()(*request);
+        }
+
+        return endpoint.authenticatedHandler.get()(*request, principal);
       }
 
-      // Install a callback on the authorization result.
-      return authorization
-        .then(defer(self(), [endpoint, request, principal](
-            bool authorization) -> Future<Response> {
-          if (authorization) {
-            // Authorization succeeded, so forward request to the handler.
-            if (endpoint.realm.isNone()) {
-              return endpoint.handler.get()(*request);
-            }
+      // Authorization failed, so return a `Forbidden` response.
+      return Forbidden();
+    };
 
-            return endpoint.authenticatedHandler.get()(*request, principal);
-          }
+    auto d = defer(self(), f);
+    Future<Response> f2 = authorization
+      .then(f);
 
-          // Authorization failed, so return a `Forbidden` response.
-          return Forbidden();
-        }
-      ));
-    }));
+    return Forbidden();
+  }));
 }
 
 
